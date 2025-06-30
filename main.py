@@ -1,5 +1,5 @@
 from typing import Annotated
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, Path, status
 from pydantic import BaseModel, Field
 import models
 from models import Todo
@@ -35,7 +35,7 @@ async def get_all_todos(db: db_dependency):
 
 
 @app.get("/{id}", status_code=status.HTTP_200_OK)
-async def get_todo(db: db_dependency, id: int):
+async def get_todo(db: db_dependency, id: int = Path(gt=0)):
     queryset = db.query(Todo).filter(Todo.id == id).first()
     if queryset is not None:
         return queryset
@@ -50,3 +50,21 @@ async def create_todo(db: db_dependency, todo_request: TodoRequest):
     db.add(queryset)
     db.commit()
     return status.HTTP_201_CREATED
+
+
+@app.put("/{id}", status_code=status.HTTP_200_OK)
+async def update_todo(
+    db: db_dependency, todo_request: TodoRequest, id: int = Path(gt=0)
+):
+    queryset = db.query(Todo).filter(Todo.id == id).first()
+    if queryset is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    else:
+        setattr(queryset, "title", todo_request.title)
+        setattr(queryset, "description", todo_request.description)
+        setattr(queryset, "priority", todo_request.priority)
+        setattr(queryset, "completed", todo_request.completed)
+
+    db.add(queryset)
+    db.commit()
+    return status.HTTP_200_OK
