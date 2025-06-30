@@ -1,5 +1,6 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, status
+from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, Field
 from passlib.context import CryptContext
 from database import SessionLocal
@@ -18,6 +19,15 @@ def get_db():
 
 
 db_dependency = Annotated[Session, Depends(get_db)]
+
+
+def authenticate_user(db: Session, username: str, password: str):
+    user = db.query(User).filter(User.username == username).first()
+    if not user or not bcrypt_context.verify(
+        password, getattr(user, "hashed_password", None)
+    ):
+        return None
+    return user
 
 
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -51,3 +61,14 @@ async def create_user(db: db_dependency, create_user_request: CreateUserRequest)
 
     db.add(create_user_model)
     db.commit()
+
+
+@router.post("/token")
+async def create_token(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: db_dependency
+):
+    user = authenticate_user(db, form_data.username, form_data.password)
+    if not user:
+        return {"error": "Invalid credentials"}, status.HTTP_401_UNAUTHORIZED
+
+    return {"access_token": "some_token", "token_type": "jwt"}
