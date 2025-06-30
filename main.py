@@ -29,12 +29,12 @@ class TodoRequest(BaseModel):
     completed: bool
 
 
-@app.get("/", status_code=status.HTTP_200_OK)
+@app.get("/todo/", status_code=status.HTTP_200_OK)
 async def get_all_todos(db: db_dependency):
     return db.query(Todo).all()
 
 
-@app.get("/{id}", status_code=status.HTTP_200_OK)
+@app.get("/todo/{id}", status_code=status.HTTP_200_OK)
 async def get_todo(db: db_dependency, id: int = Path(gt=0)):
     queryset = db.query(Todo).filter(Todo.id == id).first()
     if queryset is not None:
@@ -43,7 +43,7 @@ async def get_todo(db: db_dependency, id: int = Path(gt=0)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
 
-@app.post("/", status_code=status.HTTP_201_CREATED)
+@app.post("/todo/", status_code=status.HTTP_201_CREATED)
 async def create_todo(db: db_dependency, todo_request: TodoRequest):
     queryset = Todo(**todo_request.model_dump())
 
@@ -52,7 +52,7 @@ async def create_todo(db: db_dependency, todo_request: TodoRequest):
     return status.HTTP_201_CREATED
 
 
-@app.put("/{id}", status_code=status.HTTP_200_OK)
+@app.put("/todo/{id}", status_code=status.HTTP_200_OK)
 async def update_todo(
     db: db_dependency, todo_request: TodoRequest, id: int = Path(gt=0)
 ):
@@ -70,7 +70,7 @@ async def update_todo(
     return status.HTTP_200_OK
 
 
-@app.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+@app.delete("/todo/{id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_todo(db: db_dependency, id: int = Path(gt=0)):
     queryset = db.query(Todo).filter(Todo.id == id).first()
     if queryset is None:
