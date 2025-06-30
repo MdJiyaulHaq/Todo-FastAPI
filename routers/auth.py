@@ -1,3 +1,6 @@
+from jose import jwt
+from datetime import datetime, timedelta, timezone
+from fastapi import HTTPException
 from typing import Annotated
 from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -33,6 +36,22 @@ def authenticate_user(db: Session, username: str, password: str):
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+SECRET_KEY = ")7vv&q)!f+*xf)*hpb^qv*&nx%=ip0^nk0xb1vty&07as1n1l0"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
+
+
+def create_access_token(
+    username: str,
+    user_id: int,
+    expires_delta: timedelta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+):
+    expiration = datetime.now(timezone.utc) + expires_delta
+    to_encode = {"exp": expiration, "sub": username, "id": user_id}
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+
 class CreateUserRequest(BaseModel):
     username: str = Field(min_length=3, max_length=100)
     email: str = Field(min_length=3, max_length=100)
@@ -40,6 +59,11 @@ class CreateUserRequest(BaseModel):
     last_name: str = Field(min_length=3, max_length=100)
     password: str = Field(min_length=8)
     role: str = Field()
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
 
 
 @router.get("/auth")
@@ -63,12 +87,14 @@ async def create_user(db: db_dependency, create_user_request: CreateUserRequest)
     db.commit()
 
 
-@router.post("/token")
+@router.post("/token", response_model=Token, status_code=status.HTTP_200_OK)
 async def create_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: db_dependency
 ):
-    user = authenticate_user(db, form_data.username, form_data.password)
+    user: User = authenticate_user(db, form_data.username, form_data.password)
     if not user:
-        return {"error": "Invalid credentials"}, status.HTTP_401_UNAUTHORIZED
-
-    return {"access_token": "some_token", "token_type": "jwt"}
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
+        )
+    access_token = create_access_token(username=user.username, user_id=user.id)  # type: ignore
+    return {"access_token": access_token, "token_type": "bearer"}
