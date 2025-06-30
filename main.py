@@ -5,10 +5,12 @@ import models
 from models import Todo
 from database import engine, SessionLocal
 from sqlalchemy.orm import Session
+import auth
 
 app = FastAPI()
 
 models.Base.metadata.create_all(bind=engine)
+app.include_router(auth.router)
 
 
 def get_db():
