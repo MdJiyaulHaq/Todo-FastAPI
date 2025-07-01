@@ -64,7 +64,7 @@ async def update_todo(
     todo_request: TodoRequest,
     id: int = Path(gt=0),
 ):
-    queryset = db.query(Todo).filter(Todo.id == id).first()
+    queryset = db.query(Todo).filter(Todo.id == id, Todo.owner_id == user["id"]).first()
     if queryset is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     else:
@@ -81,7 +81,7 @@ async def update_todo(
 
 @router.delete("/todo/{id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_todo(user: user_dependency, db: db_dependency, id: int = Path(gt=0)):
-    queryset = db.query(Todo).filter(Todo.id == id).first()
+    queryset = db.query(Todo).filter(Todo.id == id, Todo.owner_id == user["id"]).first()
     if queryset is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     else:
