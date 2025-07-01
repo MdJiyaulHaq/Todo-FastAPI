@@ -14,6 +14,11 @@ router = APIRouter(
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+class UserPasswordUpdate(BaseModel):
+    password: str
+    new_password: str = Field(min_length=8)
+
+
 def get_db():
     db = SessionLocal()
     try:
@@ -42,3 +47,28 @@ async def get_user(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
+
+
+@router.put("/users/change-password", status_code=status.HTTP_200_OK)
+async def change_password(
+    user: user_dependency, db: db_dependency, user_password_update: UserPasswordUpdate
+):
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required"
+        )
+    queryset = db.query(User).filter(User.id == user["id"]).first()
+    if queryset is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+    if not bcrypt_context.verify(
+        user_password_update.password, queryset.hashed_password  # type: ignore[union-attr]
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password"
+        )
+    queryset.hashed_password = bcrypt_context.hash(user_password_update.new_password)  # type: ignore[union-attr]
+    db.add(queryset)
+    db.commit()
+    return {"detail": "Password updated successfully"}
