@@ -5,7 +5,9 @@ from models import Todo
 from database import SessionLocal
 from sqlalchemy.orm import Session
 
-router = APIRouter()
+router = APIRouter(
+    tags=["todo"],
+)
 
 
 def get_db():

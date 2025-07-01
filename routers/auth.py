@@ -10,7 +10,9 @@ from database import SessionLocal
 from models import User
 from sqlalchemy.orm import Session
 
-router = APIRouter()
+router = APIRouter(
+    tags=["auth"],
+)
 
 
 def get_db():
