@@ -1,9 +1,9 @@
-from jose import jwt
+from jose import jwt, JWTError
 from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException
 from typing import Annotated
 from fastapi import APIRouter, Depends, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from pydantic import BaseModel, Field
 from passlib.context import CryptContext
 from database import SessionLocal
@@ -34,7 +34,7 @@ def authenticate_user(db: Session, username: str, password: str):
 
 
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
+oauth2_bearer = OAuth2PasswordBearer(tokenUrl="token")
 
 SECRET_KEY = ")7vv&q)!f+*xf)*hpb^qv*&nx%=ip0^nk0xb1vty&07as1n1l0"
 ALGORITHM = "HS256"
@@ -50,6 +50,24 @@ def create_access_token(
     to_encode = {"exp": expiration, "sub": username, "id": user_id}
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+
+def decode_access_token(token: Annotated[str, Depends(oauth2_bearer)]):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username = payload.get("sub")
+        user_id = payload.get("id")
+        if not isinstance(username, str) or user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate user",
+            )
+        return {"username": username, "id": user_id}
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate user",
+        )
 
 
 class CreateUserRequest(BaseModel):
