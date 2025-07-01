@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 from models import Todo
 from database import SessionLocal
 from sqlalchemy.orm import Session
-from .auth import decode_access_token
+from .auth import get_current_user
 
 router = APIRouter(
     tags=["todo"],
@@ -20,7 +20,7 @@ def get_db():
 
 
 db_dependency = Annotated[Session, Depends(get_db)]
-user_dependency = Annotated[dict, Depends(decode_access_token)]
+user_dependency = Annotated[dict, Depends(get_current_user)]
 
 
 class TodoRequest(BaseModel):

@@ -46,25 +46,31 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60
 def create_access_token(
     username: str,
     user_id: int,
+    role: str,
     expires_delta: timedelta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
 ):
     expiration = datetime.now(timezone.utc) + expires_delta
-    to_encode = {"exp": expiration, "sub": username, "id": user_id}
+    to_encode = {"exp": expiration, "sub": username, "id": user_id, "role": role}
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 
-def decode_access_token(token: Annotated[str, Depends(oauth2_bearer)]):
+def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username = payload.get("sub")
         user_id = payload.get("id")
-        if not isinstance(username, str) or user_id is None:
+        role = payload.get("role")
+        if (
+            not isinstance(username, str)
+            or user_id is None
+            or not isinstance(role, str)
+        ):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Could not validate user",
             )
-        return {"username": username, "id": user_id}
+        return {"username": username, "id": user_id, "role": role}
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -116,5 +122,5 @@ async def create_token(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
         )
-    access_token = create_access_token(username=user.username, user_id=user.id)  # type: ignore
+    access_token = create_access_token(username=user.username, user_id=user.id, role=user.role)  # type: ignore
     return {"access_token": access_token, "token_type": "bearer"}
