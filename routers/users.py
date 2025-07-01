@@ -1,7 +1,7 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Path, status
 from pydantic import BaseModel, Field
-from models import Todo, User
+from models import Todo, Users
 from database import SessionLocal
 from sqlalchemy.orm import Session
 from .auth import get_current_user
@@ -40,7 +40,7 @@ async def get_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required"
         )
-    queryset = db.query(User).filter(User.id == user["id"]).first()
+    queryset = db.query(Users).filter(Users.id == user["id"]).first()
     if queryset is not None:
         return queryset
     else:
@@ -57,7 +57,7 @@ async def change_password(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required"
         )
-    queryset = db.query(User).filter(User.id == user["id"]).first()
+    queryset = db.query(Users).filter(Users.id == user["id"]).first()
     if queryset is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"

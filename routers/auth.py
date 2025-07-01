@@ -7,7 +7,7 @@ from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from pydantic import BaseModel, Field
 from passlib.context import CryptContext
 from database import SessionLocal
-from models import User
+from models import Users
 from sqlalchemy.orm import Session
 
 router = APIRouter(
@@ -27,7 +27,7 @@ db_dependency = Annotated[Session, Depends(get_db)]
 
 
 def authenticate_user(db: Session, username: str, password: str):
-    user = db.query(User).filter(User.username == username).first()
+    user = db.query(Users).filter(Users.username == username).first()
     if not user or not bcrypt_context.verify(
         password, getattr(user, "hashed_password", None)
     ):
@@ -99,7 +99,7 @@ async def get_user():
 
 @router.post("/auth", status_code=status.HTTP_201_CREATED)
 async def create_user(db: db_dependency, create_user_request: CreateUserRequest):
-    create_user_model = User(
+    create_user_model = Users(
         username=create_user_request.username,
         email=create_user_request.email,
         first_name=create_user_request.first_name,
@@ -117,7 +117,7 @@ async def create_user(db: db_dependency, create_user_request: CreateUserRequest)
 async def create_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: db_dependency
 ):
-    user: User = authenticate_user(db, form_data.username, form_data.password)
+    user: Users = authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
