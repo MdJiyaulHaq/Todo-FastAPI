@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link rel="stylesheet" href="/static/css/base.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TodoApp</title>
+</head>
+
+<body>
+    <h1>Todo Application</h1>
+    <p>Welcome to the Todo Application. Here you can manage your todos.</p>
+
+    <h2>Endpoints</h2>
+    <ul>
+        <li><strong>GET /todo/</strong> - Retrieve all todos for the authenticated user.</li>
+        <li><strong>GET /todo/{id}</strong> - Retrieve a specific todo by ID.</li>
+        <li><strong>POST /todo/</strong> - Create a new todo.</li>
+        <li><strong>PUT /todo/{id}</strong> - Update an existing todo by ID.</li>
+        <li><strong>DELETE /todo/{id}</strong> - Delete a todo by ID.</li>
+    </ul>
+
+    <h2>Authentication</h2>
+    <p>This application requires authentication to access the endpoints. Please ensure you are logged in.</p>
+
+    <footer>
+        <p>&copy; 2023 TodoApp</p>
+    </footer>
+</body>
+
+</html>
