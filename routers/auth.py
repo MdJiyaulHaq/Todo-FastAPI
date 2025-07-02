@@ -34,6 +34,11 @@ def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
 
+@router.get("/auth/register-page")
+def register_page(request: Request):
+    return templates.TemplateResponse("register.html", {"request": request})
+
+
 def authenticate_user(db: Session, username: str, password: str):
     user = db.query(Users).filter(Users.username == username).first()
     if not user or not bcrypt_context.verify(
