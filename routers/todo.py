@@ -1,13 +1,17 @@
 from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Request, status
+from fastapi.responses import RedirectResponse
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 from models import Todo
 from database import SessionLocal
 from sqlalchemy.orm import Session
 from .auth import get_current_user
 
+templates = Jinja2Templates(directory="templates")
 router = APIRouter(
     tags=["todo"],
+    prefix="/todos",
 )
 
 
@@ -30,12 +34,37 @@ class TodoRequest(BaseModel):
     completed: bool
 
 
-@router.get("/todo/", status_code=status.HTTP_200_OK)
+def redirect_to_login():
+    redirect_response = RedirectResponse(url="/auth/login-page")
+    redirect_response.delete_cookie(key="access_token")
+    return redirect_response
+
+
+# Todo pages
+@router.get("/todo-page")
+async def todo_page(request: Request, db: db_dependency):
+    access_token = request.cookies.get("access_token")
+    if not access_token:
+        return redirect_to_login()
+    try:
+        user = await get_current_user(access_token)
+        if user is None:
+            return redirect_to_login()
+        todos = db.query(Todo).filter(Todo.owner_id == user["id"]).all()
+        return templates.TemplateResponse(
+            "todo.html", {"request": request, "todos": todos}
+        )
+    except Exception:
+        return redirect_to_login()
+
+
+# Todo endpoints
+@router.get("/", status_code=status.HTTP_200_OK)
 async def get_all_todos(user: user_dependency, db: db_dependency):
     return db.query(Todo).filter(Todo.owner_id == user["id"]).all()
 
 
-@router.get("/todo/{id}", status_code=status.HTTP_200_OK)
+@router.get("/{id}", status_code=status.HTTP_200_OK)
 async def get_todo(user: user_dependency, db: db_dependency, id: int = Path(gt=0)):
     queryset = db.query(Todo).filter(Todo.id == id, Todo.owner_id == user["id"]).first()
     if queryset is not None:
@@ -44,7 +73,7 @@ async def get_todo(user: user_dependency, db: db_dependency, id: int = Path(gt=0
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
 
-@router.post("/todo/", status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_todo(
     user: user_dependency, db: db_dependency, todo_request: TodoRequest
 ):
@@ -57,7 +86,7 @@ async def create_todo(
     return status.HTTP_201_CREATED
 
 
-@router.put("/todo/{id}", status_code=status.HTTP_200_OK)
+@router.put("/{id}", status_code=status.HTTP_200_OK)
 async def update_todo(
     user: user_dependency,
     db: db_dependency,
@@ -79,7 +108,7 @@ async def update_todo(
     return status.HTTP_200_OK
 
 
-@router.delete("/todo/{id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_todo(user: user_dependency, db: db_dependency, id: int = Path(gt=0)):
     queryset = db.query(Todo).filter(Todo.id == id, Todo.owner_id == user["id"]).first()
     if queryset is None:

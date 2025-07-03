@@ -52,7 +52,7 @@ def authenticate_user(db: Session, username: str, password: str):
 
 
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_bearer = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_bearer = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 SECRET_KEY = ")7vv&q)!f+*xf)*hpb^qv*&nx%=ip0^nk0xb1vty&07as1n1l0"
 ALGORITHM = "HS256"
@@ -71,7 +71,7 @@ def create_access_token(
     return encoded_jwt
 
 
-def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
+async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username = payload.get("sub")
@@ -107,11 +107,6 @@ class CreateUserRequest(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
-
-
-@router.get("/auth")
-async def get_user():
-    return "hello world"
 
 
 @router.post("/auth", status_code=status.HTTP_201_CREATED)
