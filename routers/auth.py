@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 router = APIRouter(
     tags=["auth"],
+    prefix="/auth",
 )
 
 
@@ -29,16 +30,18 @@ db_dependency = Annotated[Session, Depends(get_db)]
 templates = Jinja2Templates(directory="templates")
 
 
-@router.get("/auth/login-page")
+# Authentication pages
+@router.get("/login-page")
 def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
 
-@router.get("/auth/register-page")
+@router.get("/register-page")
 def register_page(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
 
 
+# Authentication endpoints
 def authenticate_user(db: Session, username: str, password: str):
     user = db.query(Users).filter(Users.username == username).first()
     if not user or not bcrypt_context.verify(
