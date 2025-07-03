@@ -1,5 +1,6 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Path, Request, status
+from fastapi.params import Body
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
@@ -58,13 +59,29 @@ async def todo_page(request: Request, db: db_dependency):
         return redirect_to_login()
 
 
+@router.get("/add-todo-page")
+async def add_todo_page(request: Request, db: db_dependency):
+    access_token = request.cookies.get("access_token")
+    if not access_token:
+        return redirect_to_login()
+    try:
+        user = await get_current_user(access_token)
+        if user is None:
+            return redirect_to_login()
+        return templates.TemplateResponse(
+            "add-todo.html", {"request": request, "user": user}
+        )
+    except Exception:
+        return redirect_to_login()
+
+
 # Todo endpoints
-@router.get("/", status_code=status.HTTP_200_OK)
+@router.get("/todo/", status_code=status.HTTP_200_OK)
 async def get_all_todos(user: user_dependency, db: db_dependency):
     return db.query(Todo).filter(Todo.owner_id == user["id"]).all()
 
 
-@router.get("/{id}", status_code=status.HTTP_200_OK)
+@router.get("/todo/{id}", status_code=status.HTTP_200_OK)
 async def get_todo(user: user_dependency, db: db_dependency, id: int = Path(gt=0)):
     queryset = db.query(Todo).filter(Todo.id == id, Todo.owner_id == user["id"]).first()
     if queryset is not None:
@@ -73,7 +90,7 @@ async def get_todo(user: user_dependency, db: db_dependency, id: int = Path(gt=0
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/todo/", status_code=status.HTTP_201_CREATED)
 async def create_todo(
     user: user_dependency, db: db_dependency, todo_request: TodoRequest
 ):
@@ -86,7 +103,7 @@ async def create_todo(
     return status.HTTP_201_CREATED
 
 
-@router.put("/{id}", status_code=status.HTTP_200_OK)
+@router.put("/todo/{id}", status_code=status.HTTP_200_OK)
 async def update_todo(
     user: user_dependency,
     db: db_dependency,
@@ -108,7 +125,7 @@ async def update_todo(
     return status.HTTP_200_OK
 
 
-@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/todo/{id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_todo(user: user_dependency, db: db_dependency, id: int = Path(gt=0)):
     queryset = db.query(Todo).filter(Todo.id == id, Todo.owner_id == user["id"]).first()
     if queryset is None:
