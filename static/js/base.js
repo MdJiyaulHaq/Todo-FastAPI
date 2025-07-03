@@ -183,15 +183,15 @@
             const payload = {
                 email: data.email,
                 username: data.username,
-                first_name: data.firstname,
-                last_name: data.lastname,
+                first_name: data.first_name,
+                last_name: data.last_name,
                 role: data.role,
                 phone_number: data.phone_number,
                 password: data.password
             };
 
             try {
-                const response = await fetch('/auth', {
+                const response = await fetch('/auth/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
